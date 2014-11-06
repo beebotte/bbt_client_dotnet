@@ -68,11 +68,11 @@ In order to subscribe to a resource:
       };
     
 ### Writing Data
-You can write data to the resource you're subscribe to using:
+You can write data to the resource you're subscribed to using:
 
     connector.Write(channelName, resourceName, isPrivateChannel, dataToWrite);
    
 ### Publishing Data
-You can publish data to the resource you're subscribe to using:
+You can publish data to the resource you're subscribed to using:
 
     connector.Write(channelName, resourceName, isPrivateChannel, dataToPublish);
