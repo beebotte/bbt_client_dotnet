@@ -45,7 +45,7 @@ Use your account API and secret keys to initialize Beebotte connector:
     string uri   = "http://ws.sandbox.beebotte.com";
     var connector = new Connector(accesskey, secretkey, uri);
     
-### Connecting and subscribing to Beebotte
+### Connecting and subscribing to a resource
 After having initialized Beebotte connector, use the 'Connect' method To connect to Beebotte:
 
     connector.Connect();
