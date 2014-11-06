@@ -42,8 +42,8 @@ Use your account API and secret keys to initialize Beebotte connector:
 
     string accesskey  = "YOUR_API_KEY";
     string secretkey  = "YOUR_SECRET_KEY";
-    string uri   = "http://ws.sandbox.beebotte.com";
-    var connector = new Connector(accesskey, secretkey, uri);
+    string hostname   = "http://ws.beebotte.com";
+    var connector = new Connector(accesskey, secretkey, hostname);
     
 ### Connecting and subscribing to a resource
 After having initialized Beebotte connector, use the 'Connect' method To connect to Beebotte:
@@ -76,3 +76,8 @@ You can write data to the resource you're subscribed to using:
 You can publish data to the resource you're subscribed to using:
 
     connector.Write(channelName, resourceName, isPrivateChannel, dataToPublish);
+
+## License
+Copyright 2013 - 2014 Beebotte.
+
+[The MIT License](http://opensource.org/licenses/MIT)
