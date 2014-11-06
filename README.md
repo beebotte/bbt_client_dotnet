@@ -17,13 +17,17 @@ issue in github. Please provide as much information as possible about the issue 
     
 ## Install
 
-Clone the source code from github
-    git clone https://github.com/beebotte/bbt_dotnet.git
-    
-
 Nuget Install: https://www.nuget.org/packages/Beebotte.API.Client.Net
 
     Install-package Beebotte.API.Client.Net
+    
+Cloning:
+Clone the source code from github
+
+    git clone https://github.com/beebotte/bbt_client_dotnet.git
+    
+
+
   
 ## Usage
 To use the library, you need to be a registered user. If this is not the case, create your account at <http://beebotte.com> and note your access credentials.
