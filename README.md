@@ -75,7 +75,7 @@ You can write data to the resource you're subscribed to using:
 ### Publishing Data
 You can publish data to the resource you're subscribed to using:
 
-    connector.Write(channelName, resourceName, isPrivateChannel, dataToPublish);
+    connector.Publish(channelName, resourceName, isPrivateChannel, dataToPublish);
 
 ## License
 Copyright 2013 - 2014 Beebotte.
