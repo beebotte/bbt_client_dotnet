@@ -33,5 +33,16 @@ namespace Beebotte.API.Client.Net
                 return channelInternalName;
             }
         }
+
+        public event EventHandler<EventArgs<Message>> ResourceMessageReceived;
+        internal void OnResourceMessageReceived(EventArgs<Message> e)
+        {
+            EventHandler<EventArgs<Message>> handler = ResourceMessageReceived;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
     }
 }

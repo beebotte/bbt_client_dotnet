@@ -20,13 +20,18 @@ namespace Beebotte.API.Client.Net
         private string Uri;
         private int APIVersion;
         private int Port;
-        private List<Subscription> Subscriptions;
+        private List<Subscription> subscriptions;
 
         #endregion
 
         #region Properties
 
         public bool Connected { get; set; }
+        public List<Subscription> Subscriptions {
+            get {
+                return subscriptions;
+            }
+        }
 
         #endregion
 
@@ -94,31 +99,32 @@ namespace Beebotte.API.Client.Net
                 OnConnectionFailed(new EventArgs<string>(String.Format("An error has occured. {0}", u)));
             });
 
-            if (Subscriptions != null && Subscriptions.Count > 0)
+            if (subscriptions != null && subscriptions.Count > 0)
             {
-                foreach (var subscription in Subscriptions)
+                foreach (var subscription in subscriptions)
                 {
                     SendSubscription(subscription);
                 }
             }
 
         }
-        public void Subscribe(string channel, string resource, bool isPrivate, bool read, bool write)
+        public Subscription Subscribe(string channel, string resource, bool isPrivate, bool read, bool write)
         {
-            if (Subscriptions == null)
-                Subscriptions = new List<Subscription>();
+            if (subscriptions == null)
+                subscriptions = new List<Subscription>();
             var subscription = new Subscription(channel, resource, isPrivate, read, write);
-            Subscriptions.Add(subscription);
+            subscriptions.Add(subscription);
             SendSubscription(subscription);
+            return subscription;
         }
         public void Unsubscribe(string channel, string resource, bool isPrivate)
         {
-            var removedSubsciptions = from subs in Subscriptions where subs.Channel.Equals(channel) && subs.Resource.Equals(resource) select subs;
-            if (removedSubsciptions != null && Subscriptions.Count > 0)
+            var removedSubsciptions = from subs in subscriptions where subs.Channel.Equals(channel) && subs.Resource.Equals(resource) select subs;
+            if (removedSubsciptions != null && subscriptions.Count > 0)
             {
                 foreach (var subs in removedSubsciptions)
                 {
-                    Subscriptions.Remove(subs);
+                    subscriptions.Remove(subs);
                 }
             }
             var unsubscribeMessage = new JObject();
@@ -161,7 +167,7 @@ namespace Beebotte.API.Client.Net
         public void Disconnect()
         {
             bbtSocket.Disconnect();
-            Subscriptions = null;
+            subscriptions = null;
             Connected = false;
         }
 
@@ -223,6 +229,18 @@ namespace Beebotte.API.Client.Net
             if (handler != null)
             {
                 handler(this, e);
+            }
+            if (subscriptions != null)
+            {
+                var subs = from s in subscriptions
+                           where
+                               String.Equals(s.ChannelInternalName, e.Message.channel, StringComparison.CurrentCultureIgnoreCase) &&
+                               String.Equals(s.Resource, e.Message.resource, StringComparison.CurrentCultureIgnoreCase)
+                           select s;
+                foreach (var subsription in subs)
+                {
+                    subsription.OnResourceMessageReceived(e);
+                }
             }
         }
         protected virtual void OnConnectionFailed(EventArgs<string> e)
