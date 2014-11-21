@@ -9,7 +9,7 @@ namespace Beebotte.API.Client.Net
     {
         public string channel { get; set; }
         public string resource { get; set; }
-        public string data { get; set; }
+        public object data { get; set; }
         public string eid { get; set; }
         public int sid { get; set; }
     }
