@@ -63,7 +63,7 @@ In order to subscribe to a resource:
           connector.Subscribe(channelName, resourceName , isPrivateChannel, readAccess , writeAccess);
           connector.MessageReceived += (i, n) =>
           {
-              MessageBox.Show(n.Message.data); //Add here the code you want to execute on message received.
+              System.Console.WriteLine(n.Message.data); //Add here the code you want to execute on message received.
           };
       };
     
