@@ -60,8 +60,8 @@ In order to subscribe to a resource:
     
     connector.SocketConnected += (u, m) =>
       {
-          connector.Subscribe(channelName, resourceName , isPrivateChannel, readAccess , writeAccess);
-          connector.MessageReceived += (i, n) =>
+          var subscription = connector.Subscribe(channelName, resourceName , isPrivateChannel, readAccess , writeAccess);
+          subscription.ResourceMessageReceived += (i, n) =>
           {
               System.Console.WriteLine(n.Message.data); //Add here the code you want to execute on message received.
           };
