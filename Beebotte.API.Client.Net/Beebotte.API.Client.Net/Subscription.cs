@@ -34,15 +34,14 @@ namespace Beebotte.API.Client.Net
             }
         }
 
-        public event EventHandler<EventArgs<Message>> ResourceMessageReceived;
-        internal void OnResourceMessageReceived(EventArgs<Message> e)
+        public event EventHandler<EventArgs<Message>> OnMessage;
+        internal void MessageReceived(EventArgs<Message> e)
         {
-            EventHandler<EventArgs<Message>> handler = ResourceMessageReceived;
+            EventHandler<EventArgs<Message>> handler = OnMessage;
             if (handler != null)
             {
                 handler(this, e);
             }
         }
-
     }
 }

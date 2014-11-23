@@ -26,7 +26,7 @@ namespace Beebotte.API.Client.Net
 
         #region Properties
 
-        public bool Connected { get; set; }
+        public bool IsConnected { get; set; }
         public List<Subscription> Subscriptions {
             get {
                 return subscriptions;
@@ -71,12 +71,25 @@ namespace Beebotte.API.Client.Net
             bbtSocket = IO.Socket(Uri, options);
             bbtSocket.On("message", (data) =>
             {
-                OnMessageReceived(new EventArgs<Message>(JsonConvert.DeserializeObject<Message>(data.ToString())));
+                var receivedMessage = JsonConvert.DeserializeObject<Message>(data.ToString());
+                if (subscriptions != null)
+                {
+                    var subs = from s in subscriptions
+                               where
+                                   String.Equals(s.ChannelInternalName, receivedMessage.channel, StringComparison.CurrentCultureIgnoreCase) &&
+                                   String.Equals(s.Resource, receivedMessage.resource, StringComparison.CurrentCultureIgnoreCase)
+                               select s;
+                    foreach (var subsription in subs)
+                    {
+                        subsription.MessageReceived(new EventArgs<Message>(receivedMessage));
+                    }
+                }
             });
 
+            
             bbtSocket.On(Socket.EVENT_CONNECT, () =>
             {
-                Connected = true;
+                IsConnected = true;
                 bbtSocket.Emit("getsid");
             });
 
@@ -85,18 +98,18 @@ namespace Beebotte.API.Client.Net
                 if (String.IsNullOrEmpty(Sid))
                 {
                     Sid = data.ToString();
-                    OnSocketConnected(EventArgs.Empty);
+                    Connected(EventArgs.Empty);
                 }
             });
 
             bbtSocket.On(Socket.EVENT_CONNECT_ERROR, (u) =>
             {
-                OnConnectionFailed(new EventArgs<string>(String.Format("Unable to connect. Error Message:{0}", u)));
+                ConnectionFailed(new EventArgs<string>(String.Format("Unable to connect. Error Message:{0}", u)));
             });
 
             bbtSocket.On(Socket.EVENT_ERROR, (u) =>
             {
-                OnConnectionFailed(new EventArgs<string>(String.Format("An error has occured. {0}", u)));
+                ConnectionFailed(new EventArgs<string>(String.Format("An error has occured. {0}", u)));
             });
 
             if (subscriptions != null && subscriptions.Count > 0)
@@ -168,7 +181,7 @@ namespace Beebotte.API.Client.Net
         {
             bbtSocket.Disconnect();
             subscriptions = null;
-            Connected = false;
+            IsConnected = false;
         }
 
         #endregion
@@ -210,50 +223,29 @@ namespace Beebotte.API.Client.Net
 
         #region Events Hanlders
 
-        public event EventHandler SocketConnected;
-        public event EventHandler<EventArgs<Message>> MessageReceived;
-        public event EventHandler<EventArgs<string>> ConnectionFailed;
-        public event EventHandler<EventArgs<string>> ErrorOccured;
+        public event EventHandler OnConnected;
+        public event EventHandler<EventArgs<string>> OnConnectionError;
+        public event EventHandler<EventArgs<string>> OnError;
 
-        protected virtual void OnSocketConnected(EventArgs e)
+        protected virtual void Connected(EventArgs e)
         {
-            EventHandler handler = SocketConnected;
+            EventHandler handler = OnConnected;
             if (handler != null)
             {
                 handler(this, e);
             }
         }
-        protected virtual void OnMessageReceived(EventArgs<Message> e)
+        protected virtual void ConnectionFailed(EventArgs<string> e)
         {
-            EventHandler<EventArgs<Message>> handler = MessageReceived;
-            if (handler != null)
-            {
-                handler(this, e);
-            }
-            if (subscriptions != null)
-            {
-                var subs = from s in subscriptions
-                           where
-                               String.Equals(s.ChannelInternalName, e.Message.channel, StringComparison.CurrentCultureIgnoreCase) &&
-                               String.Equals(s.Resource, e.Message.resource, StringComparison.CurrentCultureIgnoreCase)
-                           select s;
-                foreach (var subsription in subs)
-                {
-                    subsription.OnResourceMessageReceived(e);
-                }
-            }
-        }
-        protected virtual void OnConnectionFailed(EventArgs<string> e)
-        {
-            EventHandler<EventArgs<string>> handler = ConnectionFailed;
+            EventHandler<EventArgs<string>> handler = OnConnectionError;
             if (handler != null)
             {
                 handler(this, e);
             }
         }
-        protected virtual void OnError(EventArgs<string> e)
+        protected virtual void ErrorOccured(EventArgs<string> e)
         {
-            EventHandler<EventArgs<string>> handler = ErrorOccured;
+            EventHandler<EventArgs<string>> handler = OnError;
             if (handler != null)
             {
                 handler(this, e);
