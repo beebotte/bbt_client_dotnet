@@ -1,12 +1,11 @@
 Beebotte Client .Net SDK
 ========================
 
-| what          | where                                  |
-|---------------|----------------------------------------|
-| overview      | http://beebotte.com/overview           |
-| tutorials     | http://beebotte.com/tutorials          |
-| apidoc        | http://beebotte.com/docs/restapi       |
-| source        | https://github.com/beebotte/bbt_dotnet |
+| what          | where                                         |
+|---------------|-----------------------------------------------|
+| overview      | http://beebotte.com/overview                  |
+| tutorials     | http://beebotte.com/tutorials                 |
+| source        | https://github.com/beebotte/bbt_client_dotnet |
 
 ### Bugs / Feature Requests
 
@@ -58,10 +57,10 @@ In order to subscribe to a resource:
     bool readAccess = true; //Boolean indicating if the connection has read access on the channel/resource
     bool writeAccess = true; //Boolean indicating if the connection has write access on the channel/resource
     
-    connector.SocketConnected += (u, m) =>
+    connector.OnConnected += (u, m) =>
       {
           var subscription = connector.Subscribe(channelName, resourceName , isPrivateChannel, readAccess , writeAccess);
-          subscription.ResourceMessageReceived += (i, n) =>
+          subscription.OnMessage += (i, n) =>
           {
               System.Console.WriteLine(n.Message.data); //Add here the code you want to execute on message received.
           };
