@@ -26,7 +26,8 @@ namespace Beebotte.API.Client.Net
 
         #region Properties
 
-        public bool IsConnected { get; set; }
+        public string ConnectionStatus{ get; set; }
+
         public List<Subscription> Subscriptions {
             get {
                 return subscriptions;
@@ -65,6 +66,7 @@ namespace Beebotte.API.Client.Net
 
         public void Connect()
         {
+            ConnectionStatus = Constants.Disconnected;
             var options = new IO.Options();
             options.Port = Port;
             options.QueryString = String.Format("key={0}", AccessKey);
@@ -86,40 +88,60 @@ namespace Beebotte.API.Client.Net
                 }
             });
 
-            
-            bbtSocket.On(Socket.EVENT_CONNECT, () =>
-            {
-                IsConnected = true;
-                bbtSocket.Emit("getsid");
-            });
-
             bbtSocket.On("getsid", (data) =>
             {
-                if (String.IsNullOrEmpty(Sid))
+                Sid = data.ToString();
+                if (String.Equals(ConnectionStatus, Constants.ReConnecting, StringComparison.InvariantCultureIgnoreCase))
                 {
-                    Sid = data.ToString();
+                    ReConnected(EventArgs.Empty);
+                    foreach (var subscription in subscriptions)
+                    {
+                        SendSubscription(subscription);
+                    }
+                }
+                else if (String.Equals(ConnectionStatus, Constants.Disconnected, StringComparison.InvariantCultureIgnoreCase))
+                {
                     Connected(EventArgs.Empty);
                 }
+                ConnectionStatus = Constants.Connected;
+            });
+
+            bbtSocket.On(Socket.EVENT_RECONNECTING, () =>
+            {
+                ConnectionStatus = Constants.ReConnecting;
+                ReConnecting(EventArgs.Empty);
+            });
+
+            bbtSocket.On(Socket.EVENT_CONNECT_TIMEOUT, (u) =>
+            {
+                TimeOut(EventArgs.Empty);
+            });
+
+            bbtSocket.On(Socket.EVENT_RECONNECT_FAILED, (u) =>
+            {
+                ReConnectionFailed(EventArgs.Empty);
+            });
+
+            bbtSocket.On(Socket.EVENT_RECONNECT_ERROR, (u) =>
+            {
+                ReConnectionError(new EventArgs<string>(String.Format("Unable to reconnect. Error Message:{0}", u)));
             });
 
             bbtSocket.On(Socket.EVENT_CONNECT_ERROR, (u) =>
             {
-                ConnectionFailed(new EventArgs<string>(String.Format("Unable to connect. Error Message:{0}", u)));
+                ConnectionError(new EventArgs<string>(String.Format("Unable to connect. Error Message:{0}", u)));
             });
 
             bbtSocket.On(Socket.EVENT_ERROR, (u) =>
             {
-                ConnectionFailed(new EventArgs<string>(String.Format("An error has occured. {0}", u)));
+                ConnectionError(new EventArgs<string>(String.Format("An error has occured. {0}", u)));
             });
 
-            if (subscriptions != null && subscriptions.Count > 0)
+            bbtSocket.On(Socket.EVENT_DISCONNECT, (u) =>
             {
-                foreach (var subscription in subscriptions)
-                {
-                    SendSubscription(subscription);
-                }
-            }
-
+                Disconnected(EventArgs.Empty);
+                ConnectionStatus = Constants.Disconnected;
+            });
         }
         public Subscription Subscribe(string channel, string resource, bool isPrivate, bool read, bool write)
         {
@@ -179,9 +201,10 @@ namespace Beebotte.API.Client.Net
         }
         public void Disconnect()
         {
-            bbtSocket.Disconnect();
+            if (bbtSocket != null)
+                bbtSocket.Disconnect();
             subscriptions = null;
-            IsConnected = false;
+            ConnectionStatus = Constants.Disconnected;
         }
 
         #endregion
@@ -224,8 +247,14 @@ namespace Beebotte.API.Client.Net
         #region Events Hanlders
 
         public event EventHandler OnConnected;
+        public event EventHandler OnReconnecting;
+        public event EventHandler OnReconnected;
+        public event EventHandler OnTimeout;
         public event EventHandler<EventArgs<string>> OnConnectionError;
+        public event EventHandler<EventArgs<string>> OnReConnectionError;
         public event EventHandler<EventArgs<string>> OnError;
+        public event EventHandler OnDisconnected;
+        public event EventHandler OnReconnectionFailed;
 
         protected virtual void Connected(EventArgs e)
         {
@@ -235,7 +264,43 @@ namespace Beebotte.API.Client.Net
                 handler(this, e);
             }
         }
-        protected virtual void ConnectionFailed(EventArgs<string> e)
+
+        protected virtual void ReConnecting(EventArgs e)
+        {
+            EventHandler handler = OnReconnecting;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void TimeOut(EventArgs e)
+        {
+            EventHandler handler = OnTimeout;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void ReConnected(EventArgs e)
+        {
+            EventHandler handler = OnReconnected;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+        protected virtual void Disconnected(EventArgs e)
+        {
+            EventHandler handler = OnDisconnected;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+       
+        protected virtual void ConnectionError(EventArgs<string> e)
         {
             EventHandler<EventArgs<string>> handler = OnConnectionError;
             if (handler != null)
@@ -243,6 +308,25 @@ namespace Beebotte.API.Client.Net
                 handler(this, e);
             }
         }
+
+        protected virtual void ReConnectionError(EventArgs<string> e)
+        {
+            EventHandler<EventArgs<string>> handler = OnReConnectionError;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
+        protected virtual void ReConnectionFailed(EventArgs e)
+        {
+            EventHandler handler = OnReconnectionFailed;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
+        }
+
         protected virtual void ErrorOccured(EventArgs<string> e)
         {
             EventHandler<EventArgs<string>> handler = OnError;
