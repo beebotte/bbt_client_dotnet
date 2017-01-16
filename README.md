@@ -77,6 +77,6 @@ You can publish data to the resource you're subscribed to using:
     connector.Publish(channelName, resourceName, isPrivateChannel, dataToPublish);
 
 ## License
-Copyright 2013 - 2014 Beebotte.
+Copyright 2013 - 2017 Beebotte.
 
 [The MIT License](http://opensource.org/licenses/MIT)
