@@ -77,7 +77,7 @@ namespace Beebotte.API.Client.Net
                     var subs = from s in subscriptions
                                where
                                    String.Equals(s.ChannelInternalName, receivedMessage.channel, StringComparison.CurrentCultureIgnoreCase) &&
-                                   String.Equals(s.Resource, receivedMessage.resource, StringComparison.CurrentCultureIgnoreCase)
+                                   (String.Equals(s.Resource, receivedMessage.resource, StringComparison.CurrentCultureIgnoreCase) || receivedMessage.resource.Equals("*"))
                                select s;
                     foreach (var subsription in subs)
                     {
