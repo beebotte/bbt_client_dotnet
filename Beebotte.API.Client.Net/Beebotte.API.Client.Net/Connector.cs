@@ -27,8 +27,10 @@ namespace Beebotte.API.Client.Net
         #region Properties
 
         public bool IsConnected { get; set; }
-        public List<Subscription> Subscriptions {
-            get {
+        public List<Subscription> Subscriptions
+        {
+            get
+            {
                 return subscriptions;
             }
         }
@@ -47,12 +49,12 @@ namespace Beebotte.API.Client.Net
             }
             AccessKey = apiKey;
             Uri = uri;
-            APIVersion =  apiVersion;
+            APIVersion = apiVersion;
             Port = port;
         }
 
         public Connector(string apiKey, string securekey, string uri, int apiVersion = 1, int port = 80)
-            : this(apiKey, uri, apiVersion)
+            : this(apiKey, uri, apiVersion, port)
         {
             if (String.IsNullOrEmpty(securekey))
                 throw new KeyNotFoundException("Missing Secure Key");
@@ -86,7 +88,7 @@ namespace Beebotte.API.Client.Net
                 }
             });
 
-            
+
             bbtSocket.On(Socket.EVENT_CONNECT, () =>
             {
                 IsConnected = true;
@@ -121,28 +123,55 @@ namespace Beebotte.API.Client.Net
             }
 
         }
+
         public Subscription Subscribe(string channel, string resource, bool isPrivate, bool read, bool write)
+        {
+            return Subscribe(channel, resource, isPrivate, read, write, false);
+        }
+
+        public Subscription Subscribe(string signalingEvent)
+        {
+            return Subscribe("signaling", signalingEvent, true, true, false, false);
+        }
+
+        public Subscription Subscribe(string channel, string resource, bool isPrivate, bool read, bool write, bool presence)
         {
             if (subscriptions == null)
                 subscriptions = new List<Subscription>();
-            var subscription = new Subscription(channel, resource, isPrivate, read, write);
+            var subscription = new Subscription(channel, resource, isPrivate, read, write, presence);
             subscriptions.Add(subscription);
             SendSubscription(subscription);
             return subscription;
         }
+
         public void Unsubscribe(string channel, string resource, bool isPrivate)
         {
-            var removedSubsciptions = from subs in subscriptions where subs.Channel.Equals(channel) && subs.Resource.Equals(resource) select subs;
-            if (removedSubsciptions != null && subscriptions.Count > 0)
+            Unsubscribe(channel, resource, isPrivate, false);
+        }
+        public void Unsubscribe(string channel, string resource, bool isPrivate, bool presence)
+        {
+            if (subscriptions != null)
             {
-                foreach (var subs in removedSubsciptions)
+                var removedSubsciptions = from subs in subscriptions
+                                          where
+               subs.Channel.Equals(channel) &&
+               subs.Resource.Equals(resource) &&
+               subs.Private.Equals(isPrivate) &&
+               subs.Presence.Equals(presence)
+                                          select subs;
+                if (removedSubsciptions != null && subscriptions.Count > 0)
                 {
-                    subscriptions.Remove(subs);
+                    var loop = removedSubsciptions.ToList();
+                    foreach (var subs in loop)
+                    {
+                        subscriptions.Remove(subs);
+                    }
                 }
             }
             var unsubscribeMessage = new JObject();
             var messageData = new JObject();
             var channelName = isPrivate ? String.Format("private-{0}", channel) : channel;
+            channelName = presence ? String.Format("presence-{0}", channelName) : channelName;
             messageData.Add("channel", channelName);
             messageData.Add("resource", resource);
             unsubscribeMessage.Add("version", APIVersion);
@@ -201,7 +230,7 @@ namespace Beebotte.API.Client.Net
             subscriptionMessage.Add("channel", "control");
             subscriptionMessage.Add("event", "subscribe");
             subscriptionData.Add("sid", Sid);
-            if (subscription.Private || subscription.Write)
+            if (subscription.Private || subscription.Write || subscription.Presence)
             {
                 subscriptionData.Add("sig", SignSubscription(subscription));
             }
